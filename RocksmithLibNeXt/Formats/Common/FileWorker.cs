@@ -13,7 +13,7 @@ namespace RocksmithLibNeXt.Formats.Common
             if (!File.Exists(fileName))
                 throw new FileNotFoundException();
 
-            FileStream fs = new(fileName, FileMode.Open, FileAccess.Read, FileShare.Read);
+            FileStream fs = File.Open(fileName, FileMode.Open, FileAccess.Read, FileShare.Read);
             Open(fs);
         }
 
@@ -27,7 +27,7 @@ namespace RocksmithLibNeXt.Formats.Common
             if (File.Exists(fileName) && !replace)
                 throw new Exception($"File \"{fileName}\" already exists.");
 
-            FileStream fs = new(fileName, FileMode.Create);
+            FileStream fs = File.Open(fileName, FileMode.Create, FileAccess.ReadWrite, FileShare.Read);
             Save(fs);
         }
 

@@ -3,17 +3,11 @@ using System.IO;
 
 namespace RocksmithLibNeXt.Common.Streams
 {
-    public class BigEndianBinaryWriter : IDisposable
+    public class BigEndianBinaryWriter : BinaryWriter
     {
-        #region Поля
+        #region Main functions
 
-        public void Flush()
-        {
-            BaseStream.Flush();
-            GC.Collect();
-        }
-
-        public void Write(byte v)
+        public override void Write(byte v)
         {
             //try
             //{
@@ -28,72 +22,81 @@ namespace RocksmithLibNeXt.Common.Streams
             //}
         }
 
-        public void Write(short v)
+        public override void Write(short v)
         {
             byte[] bytes = BitConverter.GetBytes(v);
-            for (int i = 0; i < bytes.Length; i++) Write(bytes[bytes.Length - i - 1]);
+            for (int i = 0; i < bytes.Length; i++) 
+                Write(bytes[bytes.Length - i - 1]);
         }
 
-        public void Write(int v)
+        public override void Write(int v)
         {
             byte[] bytes = BitConverter.GetBytes(v);
-            for (int i = 0; i < bytes.Length; i++) Write(bytes[bytes.Length - i - 1]);
+            for (int i = 0; i < bytes.Length; i++) 
+                Write(bytes[bytes.Length - i - 1]);
         }
 
-        public void Write(long v)
+        public override void Write(long v)
         {
             byte[] bytes = BitConverter.GetBytes(v);
-            for (int i = 0; i < bytes.Length; i++) Write(bytes[bytes.Length - i - 1]);
+            for (int i = 0; i < bytes.Length; i++) 
+                Write(bytes[bytes.Length - i - 1]);
         }
 
-        public void Write(ushort v)
+        public override void Write(ushort v)
         {
             byte[] bytes = BitConverter.GetBytes(v);
-            for (int i = 0; i < bytes.Length; i++) Write(bytes[bytes.Length - i - 1]);
+            for (int i = 0; i < bytes.Length; i++) 
+                Write(bytes[bytes.Length - i - 1]);
         }
 
-        public void Write(uint v)
+        public override void Write(uint v)
         {
             byte[] bytes = BitConverter.GetBytes(v);
-            for (int i = 0; i < bytes.Length; i++) Write(bytes[bytes.Length - i - 1]);
+            for (int i = 0; i < bytes.Length; i++) 
+                Write(bytes[bytes.Length - i - 1]);
         }
 
-        public void Write(ulong v)
+        public override void Write(ulong v)
         {
             byte[] bytes = BitConverter.GetBytes(v);
-            for (int i = 0; i < bytes.Length; i++) Write(bytes[bytes.Length - i - 1]);
+            for (int i = 0; i < bytes.Length; i++) 
+                Write(bytes[bytes.Length - i - 1]);
         }
 
-        public void Write(float v)
+        public override void Write(float v)
         {
             byte[] bytes = BitConverter.GetBytes(v);
-            for (int i = 0; i < bytes.Length; i++) Write(bytes[bytes.Length - i - 1]);
+            for (int i = 0; i < bytes.Length; i++) 
+                Write(bytes[bytes.Length - i - 1]);
         }
 
-        public void Write(double v)
+        public override void Write(double v)
         {
             byte[] bytes = BitConverter.GetBytes(v);
-            for (int i = 0; i < bytes.Length; i++) Write(bytes[bytes.Length - i - 1]);
+            for (int i = 0; i < bytes.Length; i++) 
+                Write(bytes[bytes.Length - i - 1]);
         }
 
         public void WriteUInt24(uint v)
         {
             byte[] bytes = BitConverter.GetBytes(v);
-            for (int i = 1; i < bytes.Length; i++) Write(bytes[bytes.Length - i - 1]);
+            for (int i = 1; i < bytes.Length; i++) 
+                Write(bytes[bytes.Length - i - 1]);
         }
 
         public void WriteUInt40(ulong v)
         {
             byte[] bytes = BitConverter.GetBytes(v);
-            for (int i = 3; i < bytes.Length; i++) Write(bytes[bytes.Length - i - 1]);
+            for (int i = 3; i < bytes.Length; i++) 
+                Write(bytes[bytes.Length - i - 1]);
         }
 
-        public void Write(byte[] val)
+        public override void Write(byte[] val)
         {
             //try
             //{
-            for (int i = 0; i < val.Length; i++) {
-                byte v = val[i];
+            foreach (byte v in val) {
                 Write(v);
             }
 
@@ -114,22 +117,14 @@ namespace RocksmithLibNeXt.Common.Streams
             while ((read = input.Read(buffer, 0, buffer.Length)) > 0) output.Write(buffer, 0, read);
         }
 
-        #endregion
+        #endregion Main functions
 
-        public Stream BaseStream { get; }
+        #region Constructors
 
-        public BigEndianBinaryWriter(Stream input)
+        public BigEndianBinaryWriter(Stream input) : base(input)
         {
-            BaseStream = input;
         }
 
-        #region Реализаци интерфейсов
-
-        public void Dispose()
-        {
-            BaseStream.Dispose();
-        }
-
-        #endregion
+        #endregion Constructors
     }
 }

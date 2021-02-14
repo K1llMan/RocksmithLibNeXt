@@ -6,23 +6,8 @@ namespace RocksmithLibNeXt.Common.Streams
 {
     /// MemoryStreamExtension is a re-implementation of MemoryStream that uses a dynamic list of byte arrays as a backing store,
     /// instead of a single byte array, the allocation of which will fail for relatively small streams as it requires contiguous memory.
-    /// </summary>
     public class MemoryStreamExtension : Stream /* http://msdn.microsoft.com/en-us/library/system.io.stream.aspx */
     {
-        #region Поля
-
-        #region Auxiliary functions
-
-        protected void EnsureCapacity(long intendedLength)
-        {
-            if (intendedLength > length)
-                length = intendedLength;
-        }
-
-        #endregion Auxiliary functions
-
-        #endregion
-
         #region Fields
 
         protected long length;
@@ -71,6 +56,16 @@ namespace RocksmithLibNeXt.Common.Streams
         protected long BlockOffset => Position % blockSize;
 
         #endregion Properties
+
+        #region Auxiliary functions
+
+        protected void EnsureCapacity(long intendedLength)
+        {
+            if (intendedLength > length)
+                length = intendedLength;
+        }
+
+        #endregion Auxiliary functions
 
         #region Main functions
 

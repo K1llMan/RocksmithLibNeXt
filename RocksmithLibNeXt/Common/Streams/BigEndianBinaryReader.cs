@@ -1,12 +1,11 @@
 using System;
 using System.IO;
-using System.Text;
 
 namespace RocksmithLibNeXt.Common.Streams
 {
     public class BigEndianBinaryReader : BinaryReader
     {
-        #region Поля
+        #region Main functions
 
         public override int ReadInt32()
         {
@@ -127,19 +126,11 @@ namespace RocksmithLibNeXt.Common.Streams
             return BitConverter.ToUInt64(data, 0);
         }
 
-        #endregion
+        #endregion Main functions
 
         #region Constructors
 
         public BigEndianBinaryReader(Stream input) : base(input)
-        {
-        }
-
-        public BigEndianBinaryReader(Stream input, Encoding encoding) : base(input, encoding)
-        {
-        }
-
-        public BigEndianBinaryReader(Stream input, Encoding encoding, bool leaveOpen) : base(input, encoding, leaveOpen)
         {
         }
 
