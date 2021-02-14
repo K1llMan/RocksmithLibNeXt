@@ -20,7 +20,6 @@ namespace RocksmithLibNeXt.Formats.Psarc
         #region Fields
 
         private PsarcHeader header;
-        private int[] zBlocksSizeList;
 
         private BigEndianBinaryReader reader;
 
@@ -67,17 +66,10 @@ namespace RocksmithLibNeXt.Formats.Psarc
             // get lastEntry.offset and it's size
             if (TableOfContent.Count > 0) {
                 PsarcEntry lastEntry = TableOfContent.Last();
-                long totalLen = lastEntry.Offset;
-                long zNum = zBlocksSizeList.Length - lastEntry.zIndexBegin;
-                for (int z = 0; z < zNum; z++) {
-                    int num = zBlocksSizeList[lastEntry.zIndexBegin + z];
-                    totalLen += num == 0 ? header.BlockSizeAlloc : num;
-                }
-
-                return totalLen;
+                return lastEntry.Offset + lastEntry.BlockSizes.Sum();
             }
 
-            return header.TotalTOCSize; // already read
+            return header.TotalTableOfContentSize; // already read
         }
 
         #region Manifest
@@ -234,14 +226,14 @@ namespace RocksmithLibNeXt.Formats.Psarc
                 //Parse Header
                 header.VersionNumber = reader.ReadUInt32();
                 header.CompressionMethod = reader.ReadUInt32();
-                header.TotalTOCSize = reader.ReadUInt32();
-                header.TOCEntrySize = reader.ReadUInt32();
+                header.TotalTableOfContentSize = reader.ReadUInt32();
+                header.TableOfContentEntrySize = reader.ReadUInt32();
                 header.NumFiles = reader.ReadUInt32();
                 header.BlockSizeAlloc = reader.ReadUInt32();
                 header.ArchiveFlags = reader.ReadUInt32();
 
                 //Read TOC
-                int tocSize = (int) (header.TotalTOCSize - 32U);
+                int tocSize = (int) (header.TotalTableOfContentSize - 32U);
 
                 BigEndianBinaryReader tocReader = reader;
 
@@ -249,7 +241,7 @@ namespace RocksmithLibNeXt.Formats.Psarc
                 if (header.ArchiveFlags == 4) {
                     using MemoryStream decStream = new();
 
-                    RijndaelEncryptor.DecryptPsarc(fileStream, decStream, header.TotalTOCSize);
+                    RijndaelEncryptor.DecryptPsarc(fileStream, decStream, header.TotalTableOfContentSize);
                     byte[] buffer = new byte[tocSize];
                     decStream.Read(buffer);
 
@@ -263,7 +255,7 @@ namespace RocksmithLibNeXt.Formats.Psarc
                 }
 
                 // Parse zBlocksSizeList
-                int tocChunkSize = (int) (header.NumFiles * header.TOCEntrySize); //(int)reader.BaseStream.Position //don't alter this with. causes issues
+                int tocChunkSize = (int) (header.NumFiles * header.TableOfContentEntrySize); //(int)reader.BaseStream.Position //don't alter this with. causes issues
                 int zNum = (tocSize - tocChunkSize) / bNum;
                 int[] zLengths = new int[zNum];
 
@@ -290,7 +282,6 @@ namespace RocksmithLibNeXt.Formats.Psarc
                     entry.BlockSizes.AddRange(zLengths.Skip(entry.zIndexBegin).Take(blocksCount));
                 }
 
-                zBlocksSizeList = zLengths; //TODO: validate
                 tocReader.BaseStream.Flush(); //Free tocStream resources
 
                 reader = new BigEndianBinaryReader(fileStream);
@@ -303,7 +294,7 @@ namespace RocksmithLibNeXt.Formats.Psarc
                 switch (header.CompressionMethod) {
                     case 2053925218: //zlib (BE)
                         ReadManifest();
-                        fileStream.Seek(header.TotalTOCSize, SeekOrigin.Begin);
+                        fileStream.Seek(header.TotalTableOfContentSize, SeekOrigin.Begin);
                         // Decompress Data
                         InflateEntries();
                         break;
@@ -388,10 +379,10 @@ namespace RocksmithLibNeXt.Formats.Psarc
         /// <param name="inputStream"></param>
         /// <param name="encrypt"></param>
         /// <param name="seek"></param>
-        public void Save(Stream inputStream, bool encrypt = true, bool seek = true)
+        public void Save(Stream inputStream, bool encrypt, bool seek)
         {
             header.ArchiveFlags = encrypt ? 4U : 0U;
-            header.TOCEntrySize = 30U;
+            header.TableOfContentEntrySize = 30U;
 
             // track artifacts
             WriteManifest();
@@ -401,9 +392,9 @@ namespace RocksmithLibNeXt.Formats.Psarc
 
             //Build zLengths
             BigEndianBinaryWriter writer = new(inputStream);
-            int blocksCount = TableOfContent.Select(e => e.BlockSizes.Count).Sum();
-            header.TotalTOCSize = (uint) (32 + TableOfContent.Count * header.TOCEntrySize + blocksCount * bNum);
-            TableOfContent[0].Offset = header.TotalTOCSize;
+            int blocksCount = TableOfContent.Sum(e => e.BlockSizes.Count);
+            header.TotalTableOfContentSize = (uint) (32 + TableOfContent.Count * header.TableOfContentEntrySize + blocksCount * bNum);
+            TableOfContent[0].Offset = header.TotalTableOfContentSize;
 
             for (int i = 1; i < TableOfContent.Count; i++) 
                 TableOfContent[i].Offset = TableOfContent[i - 1].Offset + zStreams[TableOfContent[i - 1]].Length;
@@ -412,8 +403,8 @@ namespace RocksmithLibNeXt.Formats.Psarc
             writer.Write(header.MagicNumber);
             writer.Write(header.VersionNumber);
             writer.Write(header.CompressionMethod);
-            writer.Write(header.TotalTOCSize);
-            writer.Write(header.TOCEntrySize);
+            writer.Write(header.TotalTableOfContentSize);
+            writer.Write(header.TableOfContentEntrySize);
             writer.Write(TableOfContent.Count);
             writer.Write(header.BlockSizeAlloc);
             writer.Write(header.ArchiveFlags);
@@ -501,7 +492,7 @@ namespace RocksmithLibNeXt.Formats.Psarc
                 using MemoryStreamExtension outputStream = new();
                 using MemoryStreamExtension encStream = new();
                 inputStream.Position = 32L;
-                RijndaelEncryptor.EncryptPsarc(inputStream, outputStream, header.TotalTOCSize);
+                RijndaelEncryptor.EncryptPsarc(inputStream, outputStream, header.TotalTableOfContentSize);
                 inputStream.Position = 0L;
 
                 // quick copy header from input stream
@@ -510,7 +501,7 @@ namespace RocksmithLibNeXt.Formats.Psarc
                 encStream.Position = 32; //sanity check ofc
                 inputStream.Flush();
 
-                int tocSize = (int) header.TotalTOCSize - 32;
+                int tocSize = (int) header.TotalTableOfContentSize - 32;
                 int decSize = 0;
                 buffer = new byte[1024 * 16]; // more efficient use of memory
 
