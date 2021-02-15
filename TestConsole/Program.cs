@@ -10,11 +10,14 @@ namespace TestConsole
         {
             Psarc archive = new(false);
 
-            //archive.Open("C:\\testOut.psarc");
-            //archive.Extract("C:\\extractTest2");
-
-            //archive.Open("C:\\test.psarc");
-            //archive.Save("C:\\testOut.psarc", true);
+            if (!true) {
+                archive.Open("C:\\testOut.psarc");
+                archive.Extract("C:\\extractTest2");
+            }
+            else {
+                archive.Open("C:\\test.psarc");
+                archive.Save("C:\\testOut.psarc", true);
+            }
 
             //archive.Read(fileStream);
 

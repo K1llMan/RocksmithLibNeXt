@@ -106,18 +106,34 @@ namespace RocksmithLibNeXt.Common.Encryption
 
         #region Main functions
 
-        public static void EncryptFile(Stream input, Stream output, byte[] key)
+        /*
+        public static void EncryptFile(Stream input, Stream output, byte[] key, CipherMode mode, long len)
         {
             using RijndaelManaged rij = new();
             InitRijndael(rij, key, CipherMode.ECB);
             Crypto(input, output, rij.CreateEncryptor(), input.Length);
         }
 
-        public static void DecryptFile(Stream input, Stream output, byte[] key)
+        public static void DecryptFile(Stream input, Stream output, byte[] key, CipherMode mode, long len)
         {
             using RijndaelManaged rij = new();
             InitRijndael(rij, key, CipherMode.ECB);
             Crypto(input, output, rij.CreateDecryptor(), input.Length);
+        }         
+         */
+
+        public static void EncryptFile(Stream input, Stream output, byte[] key, CipherMode mode, long len)
+        {
+            using RijndaelManaged rij = new();
+            InitRijndael(rij, key, mode);
+            Crypto(input, output, rij.CreateEncryptor(), len);
+        }
+
+        public static void DecryptFile(Stream input, Stream output, byte[] key, CipherMode mode, long len)
+        {
+            using RijndaelManaged rij = new();
+            InitRijndael(rij, key, mode);
+            Crypto(input, output, rij.CreateDecryptor(), len);
         }
 
         #endregion Main functions
@@ -200,24 +216,6 @@ namespace RocksmithLibNeXt.Common.Encryption
          */
 
         #endregion SngEncryption
-
-        #region PsarcEncryption
-
-        public static void EncryptPsarc(Stream input, Stream output, long len)
-        {
-            using RijndaelManaged rij = new();
-            InitRijndael(rij, PsarcKey, CipherMode.CFB);
-            Crypto(input, output, rij.CreateEncryptor(), len);
-        }
-
-        public static void DecryptPsarc(Stream input, Stream output, long len)
-        {
-            using RijndaelManaged rij = new();
-            InitRijndael(rij, PsarcKey, CipherMode.CFB);
-            Crypto(input, output, rij.CreateDecryptor(), len);
-        }
-
-        #endregion PsarcEncryption
 
         #region ProfileEncryption
 

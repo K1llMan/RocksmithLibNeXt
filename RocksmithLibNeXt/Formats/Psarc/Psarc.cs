@@ -2,12 +2,12 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
 
 using Microsoft.Extensions.Logging;
 
-using RocksmithLibNeXt.Common.Archives;
 using RocksmithLibNeXt.Common.Encryption;
 using RocksmithLibNeXt.Common.Streams;
 using RocksmithLibNeXt.Formats.Common;
@@ -17,6 +17,17 @@ namespace RocksmithLibNeXt.Formats.Psarc
 {
     public class Psarc : FileWorker, IDisposable
     {
+        #region Constants
+
+        private static readonly byte[] cryptoKey = {
+            0xC5, 0x3D, 0xB2, 0x38, 0x70, 0xA1, 0xA2, 0xF7,
+            0x1C, 0xAE, 0x64, 0x06, 0x1F, 0xDD, 0x0E, 0x11,
+            0x57, 0x30, 0x9D, 0xC8, 0x52, 0x04, 0xD4, 0xC5,
+            0xBF, 0xDF, 0x25, 0x09, 0x0D, 0xF2, 0x57, 0x2C
+        };
+
+        #endregion Constants
+
         #region Fields
 
         private PsarcHeader header;
@@ -37,16 +48,18 @@ namespace RocksmithLibNeXt.Formats.Psarc
 
         #region Auxiliary functions
 
-        private void ParseTableOfContent(BigEndianBinaryReader tocReader)
+        private void ParseTableOfContent(Stream baseStream, BigEndianBinaryReader tocReader)
         {
             // Parse TOC Entries
             for (int i = 0, tocFiles = (int) header.NumFiles; i < tocFiles; i++) {
-                TableOfContent.Add(new PsarcEntry(){
+                TableOfContent.Add(new PsarcEntry(baseStream)
+                {
                     Id = i,
                     MD5 = tocReader.ReadBytes(16),
                     zIndexBegin = (int)tocReader.ReadUInt32(),
                     Length = (int)tocReader.ReadUInt40(),
-                    Offset = (int)tocReader.ReadUInt40()
+                    Offset = (int)tocReader.ReadUInt40(),
+                    Compressed = true
                 });
 
                 /* FIXME: general idea was to implement parallel inflate route, still need to re-think this.
@@ -72,6 +85,22 @@ namespace RocksmithLibNeXt.Formats.Psarc
             return header.TotalTableOfContentSize; // already read
         }
 
+        private Stream DecryptTableOfContent(Stream stream, long len)
+        {
+            MemoryStream outputStream = new();
+            RijndaelEncryptor.DecryptFile(stream, outputStream, cryptoKey, CipherMode.CFB, len);
+            
+            return outputStream;
+        }
+
+        private Stream EncryptTableOfContent(Stream stream, long len)
+        {
+            MemoryStream outputStream = new();
+            RijndaelEncryptor.EncryptFile(stream, outputStream, cryptoKey, CipherMode.CFB, len);
+
+            return outputStream;
+        }
+
         #region Manifest
 
         /// <summary>
@@ -83,8 +112,7 @@ namespace RocksmithLibNeXt.Formats.Psarc
 
             toc.Name = "NamesBlock.bin";
 
-            InflateEntry(toc);
-            //InflateEntryNew(toc);
+            //InflateEntry(toc);
 
             using StreamReader bReader = new(toc.Data, true);
             int count = TableOfContent.Count;
@@ -132,6 +160,7 @@ namespace RocksmithLibNeXt.Formats.Psarc
             }
 
             TableOfContent[0].Data = binaryWriter.BaseStream;
+            TableOfContent[0].Compressed = false;
             TableOfContent[0].Length = binaryWriter.BaseStream.Length;
         }
 
@@ -153,67 +182,6 @@ namespace RocksmithLibNeXt.Formats.Psarc
         }
 
         #region Reading
-
-        private void InflateEntry(PsarcEntry entry)
-        {
-            // Skip empty files
-            if (entry.Length == 0)
-                return;
-
-            entry.Data = UseMemory
-                ? new MemoryStream() //new MemoryStreamExtension()
-                : new TempFileStream();
-
-            reader.BaseStream.Position = entry.Offset;
-
-            const int zHeader = 0x78DA;
-
-            foreach (int size in entry.BlockSizes) {
-                ushort num = reader.ReadUInt16();
-                reader.BaseStream.Position -= 2L;
-
-                byte[] data = reader.ReadBytes(size);
-
-                // Compressed
-                if (num == zHeader)
-                    try
-                    {
-                        Archives.Unzip(data, entry.Data, false);
-                    }
-                    catch (Exception ex)
-                    {
-                        // corrupt CDLC zlib.net exception ... try to unpack
-                        Logger.LogError(string.IsNullOrEmpty(entry.Name)
-                            ? @$"CDLC contains a zlib exception.{Environment.NewLine}Warning: {ex}"
-                            : @$"CDLC contains a broken datachunk in file '{entry.Name.Split('/').Last()}'.{Environment.NewLine}Warning Type 1: {ex}");
-                    }
-                // Raw
-                else
-                    entry.Data.Write(data, 0, data.Length);
-            }
-
-            entry.Data.Seek(0, SeekOrigin.Begin);
-            entry.Data.Flush();
-        }
-
-        /// <summary>
-        /// Inflates the entry.
-        /// </summary>
-        /// <param name="name">Name with extension.</param>
-        public void InflateEntry(string name)
-        {
-            InflateEntry(TableOfContent.First(t => t.Name.EndsWith(name, StringComparison.Ordinal)));
-        }
-
-        /// <summary>
-        /// Inflates all entries in current psarc.
-        /// </summary>
-        public void InflateEntries()
-        {
-            foreach (PsarcEntry current in TableOfContent)
-                // We really can use Parallel here.
-                InflateEntry(current);
-        }
 
         public override void Open(Stream fileStream)
         {
@@ -239,9 +207,8 @@ namespace RocksmithLibNeXt.Formats.Psarc
 
                 // TOC_ENCRYPTED
                 if (header.ArchiveFlags == 4) {
-                    using MemoryStream decStream = new();
+                    using Stream decStream = DecryptTableOfContent(fileStream, header.TotalTableOfContentSize);
 
-                    RijndaelEncryptor.DecryptPsarc(fileStream, decStream, header.TotalTableOfContentSize);
                     byte[] buffer = new byte[tocSize];
                     decStream.Read(buffer);
 
@@ -251,7 +218,7 @@ namespace RocksmithLibNeXt.Formats.Psarc
                     tocStream.Position = 0;
 
                     tocReader = new BigEndianBinaryReader(tocStream);
-                    ParseTableOfContent(tocReader);
+                    ParseTableOfContent(fileStream, tocReader);
                 }
 
                 // Parse zBlocksSizeList
@@ -295,8 +262,6 @@ namespace RocksmithLibNeXt.Formats.Psarc
                     case 2053925218: //zlib (BE)
                         ReadManifest();
                         fileStream.Seek(header.TotalTableOfContentSize, SeekOrigin.Begin);
-                        // Decompress Data
-                        InflateEntries();
                         break;
                     case 1819962721: //lzma (BE)
                         throw new NotImplementedException("LZMA compression not supported.");
@@ -311,60 +276,6 @@ namespace RocksmithLibNeXt.Formats.Psarc
         #endregion Reading
 
         #region Writing
-
-        private void DeflateEntries(out Dictionary<PsarcEntry, byte[]> entryDeflatedData)
-        {
-            // TODO: This produces perfect results for song archives (original vs repacked)
-            // there are slight differences in the binary of large archives (original vs repacked).  WHY?
-            //
-            entryDeflatedData = new Dictionary<PsarcEntry, byte[]>();
-            uint blockSize = header.BlockSizeAlloc;
-
-            int ndx = 0; // for debugging
-            int blocksCount = 0;
-
-            foreach (PsarcEntry entry in TableOfContent)
-            {
-                entry.BlockSizes.Clear();
-                entry.zIndexBegin = blocksCount;
-                entry.Data.Seek(0, SeekOrigin.Begin);
-
-                MemoryStream outputStream = new();
-
-                while (entry.Data.Position < entry.Data.Length)
-                {
-                    byte[] arrayI = new byte[blockSize];
-                    byte[] arrayO = new byte[blockSize * 2];
-
-                    using MemoryStream memoryStream = new(arrayO);
-
-                    int plainLen = entry.Data.Read(arrayI);
-                    long packedLen = Archives.Zip(arrayI, memoryStream, plainLen, false);
-
-                    // If packed data "worse" than plain (i.e. already packed) z = 0
-                    if (packedLen >= plainLen)
-                    {
-                        entry.BlockSizes.Add(plainLen);
-                        outputStream.Write(arrayI, 0, plainLen);
-                    }
-                    // If packed data is good
-                    else
-                    {
-                        int size = packedLen < blockSize - 1 ? (int) packedLen : plainLen;
-
-                        entry.BlockSizes.Add(size);
-                        outputStream.Write(memoryStream.ToArray(), 0, size);
-                    }
-                }
-
-                entryDeflatedData.Add(entry, outputStream.ToArray());
-                blocksCount += entry.BlockSizes.Count;
-
-                #if DEBUG
-                Logger.LogDebug($"Deflating \"{entry.Name}\" ({++ndx}/{TableOfContent.Count}): {entry.Data.Length} -> {outputStream.Length}");
-                #endif
-            }
-        }
 
         public override void Save(Stream inputStream)
         {
@@ -388,7 +299,8 @@ namespace RocksmithLibNeXt.Formats.Psarc
             WriteManifest();
 
             // Pack entries
-            DeflateEntries(out Dictionary<PsarcEntry, byte[]> zStreams);
+            Dictionary<PsarcEntry, byte[]> streams = TableOfContent
+                .ToDictionary(e => e, e => ((MemoryStream)e.GetDeflatedStream()).ToArray());
 
             //Build zLengths
             BigEndianBinaryWriter writer = new(inputStream);
@@ -396,8 +308,9 @@ namespace RocksmithLibNeXt.Formats.Psarc
             header.TotalTableOfContentSize = (uint) (32 + TableOfContent.Count * header.TableOfContentEntrySize + blocksCount * bNum);
             TableOfContent[0].Offset = header.TotalTableOfContentSize;
 
-            for (int i = 1; i < TableOfContent.Count; i++) 
-                TableOfContent[i].Offset = TableOfContent[i - 1].Offset + zStreams[TableOfContent[i - 1]].Length;
+            for (int i = 1; i < TableOfContent.Count; i++) {
+                TableOfContent[i].Offset = TableOfContent[i - 1].Offset + streams[TableOfContent[i - 1]].Length;
+            }
 
             //Write Header
             writer.Write(header.MagicNumber);
@@ -414,7 +327,7 @@ namespace RocksmithLibNeXt.Formats.Psarc
                 entry.UpdateNameMD5();
                 writer.Write(entry.MD5);
                 writer.Write(entry.zIndexBegin);
-                writer.WriteUInt40((ulong)entry.Data.Length);
+                writer.WriteUInt40((ulong)entry.Length);
                 writer.WriteUInt40((ulong)entry.Offset);
 
                 #if DEBUG
@@ -446,16 +359,18 @@ namespace RocksmithLibNeXt.Formats.Psarc
                 //try
                 //{
                 // use chunk write method to avoid OOM Exceptions
-                byte[] z = zStreams[entry];
+                byte[] z = streams[entry];
                 int len = z.Length;
-                if (len > header.BlockSizeAlloc) {
+                if (len > header.BlockSizeAlloc)
+                {
                     using MemoryStreamExtension msInput = new(z);
                     using MemoryStreamExtension msExt = new();
                     using BigEndianBinaryWriter writer2 = new(msExt);
                     int bytesRead;
                     int totalBytesRead = 0;
                     byte[] buffer = new byte[header.BlockSizeAlloc];
-                    while ((bytesRead = msInput.Read(buffer, 0, buffer.Length)) > 0) {
+                    while ((bytesRead = msInput.Read(buffer, 0, buffer.Length)) > 0)
+                    {
                         totalBytesRead += bytesRead;
                         if (totalBytesRead > len)
                             bytesRead = len - (totalBytesRead - bytesRead);
@@ -467,8 +382,9 @@ namespace RocksmithLibNeXt.Formats.Psarc
 
                     writer.Write(msExt.ToArray());
                 }
-                else {
-                    writer.Write(zStreams[entry]);
+                else
+                {
+                    writer.Write(streams[entry]);
                 }
 
                 entry.Data?.Close();
@@ -489,14 +405,14 @@ namespace RocksmithLibNeXt.Formats.Psarc
 
             // Encrypt TOC
             if (encrypt) {
-                using MemoryStreamExtension outputStream = new();
-                using MemoryStreamExtension encStream = new();
                 inputStream.Position = 32L;
-                RijndaelEncryptor.EncryptPsarc(inputStream, outputStream, header.TotalTableOfContentSize);
+                using Stream outputStream = EncryptTableOfContent(inputStream, header.TotalTableOfContentSize);
                 inputStream.Position = 0L;
 
                 // quick copy header from input stream
                 byte[] buffer = new byte[32];
+
+                using MemoryStreamExtension encStream = new();
                 encStream.Write(buffer, 0, inputStream.Read(buffer, 0, buffer.Length));
                 encStream.Position = 32; //sanity check ofc
                 inputStream.Flush();
@@ -548,7 +464,8 @@ namespace RocksmithLibNeXt.Formats.Psarc
             PsarcEntry entry = new() {
                 Name = name,
                 Data = data,
-                Length = data.Length
+                Length = data.Length,
+                Compressed = false
             };
 
             AddEntry(entry);
