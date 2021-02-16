@@ -117,56 +117,11 @@ namespace RocksmithLibNeXt.Formats.Psarc.Models
             return outputStream; 
         }
 
-        private Stream DeflateData(Stream stream)
-        {
-            // TODO: block size from header
-            int blockSize = 65536;
-
-            BlockSizes.Clear();
-            Length = stream.Length;
-            stream.Seek(0, SeekOrigin.Begin);
-
-            MemoryStream outputStream = new();
-
-            while (stream.Position < stream.Length)
-            {
-                byte[] arrayI = new byte[blockSize];
-                byte[] arrayO = new byte[blockSize * 2];
-
-                using MemoryStream memoryStream = new(arrayO);
-
-                int plainLen = stream.Read(arrayI);
-                long packedLen = Archives.Zip(arrayI, memoryStream, plainLen, false);
-
-                // If packed data "worse" than plain (i.e. already packed) z = 0
-                if (packedLen >= plainLen)
-                {
-                    BlockSizes.Add(plainLen);
-                    outputStream.Write(arrayI, 0, plainLen);
-                }
-                // If packed data is good
-                else
-                {
-                    int size = packedLen < blockSize - 1 ? (int)packedLen : plainLen;
-
-                    BlockSizes.Add(size);
-                    outputStream.Write(memoryStream.ToArray(), 0, size);
-                }
-            }
-
-            #if DEBUG
-            Logger.LogDebug($"Deflating \"{Name}\": {stream.Length} -> {outputStream.Length}");
-            #endif
-
-            return outputStream;
-        }
-
         private Stream GetStream()
         {
-            if (!Compressed)
-                return dataStream;
-
-            return InflateData(dataStream);
+            return !Compressed 
+                ? dataStream : 
+                InflateData(dataStream);
         }
 
         #endregion Auxiliary functions
@@ -188,9 +143,48 @@ namespace RocksmithLibNeXt.Formats.Psarc.Models
             MD5 = Name == string.Empty ? new byte[16] : new MD5CryptoServiceProvider().ComputeHash(Encoding.ASCII.GetBytes(Name));
         }
 
-        public Stream GetDeflatedStream()
+        /// <summary>
+        /// Write deflated data directly to output stream
+        /// </summary>
+        /// <param name="outputStream">Output file stream</param>
+        /// <param name="blockSize">Block size</param>
+        public void WriteDeflatedStream(Stream outputStream, int blockSize)
         {
-            return DeflateData(Data);
+            using Stream inputStream = Data;
+
+            BlockSizes.Clear();
+            Length = inputStream.Length;
+            inputStream.Seek(0, SeekOrigin.Begin);
+
+            while (inputStream.Position < inputStream.Length)
+            {
+                byte[] arrayI = new byte[blockSize];
+                byte[] arrayO = new byte[blockSize * 2];
+
+                using MemoryStream memoryStream = new(arrayO);
+
+                int plainLen = inputStream.Read(arrayI);
+                long packedLen = Archives.Zip(arrayI, memoryStream, plainLen, false);
+
+                // If packed data "worse" than plain (i.e. already packed) z = 0
+                if (packedLen >= plainLen)
+                {
+                    BlockSizes.Add(plainLen);
+                    outputStream.Write(arrayI, 0, plainLen);
+                }
+                // If packed data is good
+                else
+                {
+                    int size = packedLen < blockSize - 1 ? (int)packedLen : plainLen;
+
+                    BlockSizes.Add(size);
+                    outputStream.Write(memoryStream.ToArray(), 0, size);
+                }
+            }
+
+            #if DEBUG
+            Logger.LogDebug($"Deflating \"{Name}\": {inputStream.Length} -> {BlockSizes.Sum()}");
+            #endif
         }
 
         public void Extract(string path)

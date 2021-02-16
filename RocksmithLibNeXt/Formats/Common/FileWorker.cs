@@ -31,7 +31,7 @@ namespace RocksmithLibNeXt.Formats.Common
             Save(fs);
         }
 
-        public virtual void Save(Stream fileStream)
+        public virtual void Save(Stream outputStream)
         {
             throw new NotImplementedException();
         }

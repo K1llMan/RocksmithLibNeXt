@@ -1,4 +1,6 @@
 ﻿using System;
+using System.IO;
+using System.Linq;
 
 using RocksmithLibNeXt.Formats.Psarc;
 
@@ -8,15 +10,21 @@ namespace TestConsole
     {
         static void Main(string[] args)
         {
-            Psarc archive = new(false);
+            Psarc psarc = new(false);
 
-            if (!true) {
-                archive.Open("C:\\testOut.psarc");
-                archive.Extract("C:\\extractTest2");
+            string outputDir = "C:\\extractTest3";
+            if (true) {
+                psarc.Open("C:\\testOut.psarc");
+                psarc.Extract(outputDir);
             }
             else {
-                archive.Open("C:\\test.psarc");
-                archive.Save("C:\\testOut.psarc", true);
+                Directory.GetFiles(outputDir, "*", SearchOption.AllDirectories).ToList().ForEach(f => {
+                    string relPath = Path.GetRelativePath(outputDir, f);
+                    psarc.AddEntry(relPath, f);
+                });
+                //archive.Open("C:\\test.psarc");
+                psarc.Save("C:\\testOut.psarc", true);
+                //psarc.SaveOld("C:\\testOut.psarc", true);
             }
 
             //archive.Read(fileStream);

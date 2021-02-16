@@ -162,6 +162,7 @@ namespace RocksmithLibNeXt.Formats.Psarc
             TableOfContent[0].Data = binaryWriter.BaseStream;
             TableOfContent[0].Compressed = false;
             TableOfContent[0].Length = binaryWriter.BaseStream.Length;
+            TableOfContent[0].BlockSizes = new List<int>(Enumerable.Range(1, (int) Math.Ceiling((decimal) binaryWriter.BaseStream.Length / header.BlockSizeAlloc)));
         }
 
         #endregion Manifest
@@ -277,9 +278,9 @@ namespace RocksmithLibNeXt.Formats.Psarc
 
         #region Writing
 
-        public override void Save(Stream inputStream)
+        public override void Save(Stream fileStream)
         {
-            Save(inputStream, true, true);
+            Save(fileStream, true, true);
         }
 
         /// <summary>
@@ -287,10 +288,10 @@ namespace RocksmithLibNeXt.Formats.Psarc
         /// <para>Default 'seek' is true, flushes and seeks to the end of stream after write is finished</para>
         /// <para>Eliminates the need for coding output.Flush() followed by output.Seek(0, SeekOrigin.Begin)</para>
         /// </summary>
-        /// <param name="inputStream"></param>
+        /// <param name="fileStream"></param>
         /// <param name="encrypt"></param>
         /// <param name="seek"></param>
-        public void Save(Stream inputStream, bool encrypt, bool seek)
+        public void Save(Stream fileStream, bool encrypt, bool seek)
         {
             header.ArchiveFlags = encrypt ? 4U : 0U;
             header.TableOfContentEntrySize = 30U;
@@ -298,21 +299,12 @@ namespace RocksmithLibNeXt.Formats.Psarc
             // track artifacts
             WriteManifest();
 
-            // Pack entries
-            Dictionary<PsarcEntry, byte[]> streams = TableOfContent
-                .ToDictionary(e => e, e => ((MemoryStream)e.GetDeflatedStream()).ToArray());
-
             //Build zLengths
-            BigEndianBinaryWriter writer = new(inputStream);
+            BigEndianBinaryWriter writer = new(fileStream);
             int blocksCount = TableOfContent.Sum(e => e.BlockSizes.Count);
             header.TotalTableOfContentSize = (uint) (32 + TableOfContent.Count * header.TableOfContentEntrySize + blocksCount * bNum);
-            TableOfContent[0].Offset = header.TotalTableOfContentSize;
 
-            for (int i = 1; i < TableOfContent.Count; i++) {
-                TableOfContent[i].Offset = TableOfContent[i - 1].Offset + streams[TableOfContent[i - 1]].Length;
-            }
-
-            //Write Header
+            // Write Header
             writer.Write(header.MagicNumber);
             writer.Write(header.VersionNumber);
             writer.Write(header.CompressionMethod);
@@ -322,9 +314,50 @@ namespace RocksmithLibNeXt.Formats.Psarc
             writer.Write(header.BlockSizeAlloc);
             writer.Write(header.ArchiveFlags);
 
-            // Write Table of contents
-            foreach (PsarcEntry entry in TableOfContent) {
+            // Table of content position
+            long tocPosition = fileStream.Position;
+            foreach (PsarcEntry entry in TableOfContent)
+            {
                 entry.UpdateNameMD5();
+                writer.Write(entry.MD5);
+                writer.Write(entry.zIndexBegin);
+                writer.WriteUInt40((ulong)entry.Length);
+                writer.WriteUInt40((ulong)entry.Offset);
+            }
+
+            // Block sizes list
+            long sizesPosition = fileStream.Position;
+            foreach (int zLen in TableOfContent.SelectMany(entry => entry.BlockSizes))
+                switch (bNum)
+                {
+                    // 16bit
+                    case 2: 
+                        writer.Write((ushort)0);
+                        break;
+                    // 24bit
+                    case 3: 
+                        writer.WriteUInt24((uint)0);
+                        break;
+                    // 32bit
+                    case 4: 
+                        writer.Write(0);
+                        break;
+                }
+
+            // Deflated data
+            int zIndex = 0;
+            fileStream.Position = header.TotalTableOfContentSize;
+            foreach (PsarcEntry entry in TableOfContent) {
+                entry.zIndexBegin = zIndex;
+                entry.Offset = fileStream.Position;
+                entry.WriteDeflatedStream(fileStream, (int)header.BlockSizeAlloc);
+                zIndex += entry.BlockSizes.Count;
+            }
+
+            // Updating TOC and sizes
+            fileStream.Position = tocPosition;
+            foreach (PsarcEntry entry in TableOfContent)
+            {
                 writer.Write(entry.MD5);
                 writer.Write(entry.zIndexBegin);
                 writer.WriteUInt40((ulong)entry.Length);
@@ -334,88 +367,38 @@ namespace RocksmithLibNeXt.Formats.Psarc
                 Logger.LogDebug($"Writing tocData: {entry.Id}");
                 #endif
             }
-            
-            foreach (PsarcEntry entry in TableOfContent)
-                foreach (int zLen in entry.BlockSizes)
-                    switch (bNum)
-                    {
-                        case 2: //16bit
-                            writer.Write((ushort)zLen);
-                            break;
-                        case 3: //24bit
-                            writer.WriteUInt24((uint)zLen);
-                            break;
-                        case 4: //32bit
-                            writer.Write(zLen);
-                            break;
-                    }
-            
-            // Write zData
-            foreach (PsarcEntry entry in TableOfContent) {
-                // skip NamesBlock.bin
-                //if (current.Name == "NamesBlock.bin")
-                //    continue;
 
-                //try
-                //{
-                // use chunk write method to avoid OOM Exceptions
-                byte[] z = streams[entry];
-                int len = z.Length;
-                if (len > header.BlockSizeAlloc)
+            fileStream.Position = sizesPosition;
+            foreach (int zLen in TableOfContent.SelectMany(entry => entry.BlockSizes))
+                switch (bNum)
                 {
-                    using MemoryStreamExtension msInput = new(z);
-                    using MemoryStreamExtension msExt = new();
-                    using BigEndianBinaryWriter writer2 = new(msExt);
-                    int bytesRead;
-                    int totalBytesRead = 0;
-                    byte[] buffer = new byte[header.BlockSizeAlloc];
-                    while ((bytesRead = msInput.Read(buffer, 0, buffer.Length)) > 0)
-                    {
-                        totalBytesRead += bytesRead;
-                        if (totalBytesRead > len)
-                            bytesRead = len - (totalBytesRead - bytesRead);
-
-                        using MemoryStreamExtension msOutput = new();
-                        msOutput.Write(buffer, 0, bytesRead);
-                        writer2.Write(msOutput.ToArray());
-                    }
-
-                    writer.Write(msExt.ToArray());
+                    // 16bit
+                    case 2:
+                        writer.Write((ushort)zLen);
+                        break;
+                    // 24bit
+                    case 3:
+                        writer.WriteUInt24((uint)zLen);
+                        break;
+                    // 32bit
+                    case 4:
+                        writer.Write(zLen);
+                        break;
                 }
-                else
-                {
-                    writer.Write(streams[entry]);
-                }
-
-                entry.Data?.Close();
-                //}
-                //catch (Exception ex)
-                //{
-                //    Console.WriteLine("<ERROR> writer.Write: " + ex.Message);
-                //    writer.Flush();
-                //    writer.Dispose();
-                //    break;
-                //}
-
-                #if DEBUG
-                Logger.LogDebug($"Writing zData: {entry.Id}");
-                #endif
-
-            }
 
             // Encrypt TOC
             if (encrypt) {
-                inputStream.Position = 32L;
-                using Stream outputStream = EncryptTableOfContent(inputStream, header.TotalTableOfContentSize);
-                inputStream.Position = 0L;
+                fileStream.Position = 32L;
+                using Stream outputStream = EncryptTableOfContent(fileStream, header.TotalTableOfContentSize);
+                fileStream.Position = 0L;
 
                 // quick copy header from input stream
                 byte[] buffer = new byte[32];
 
                 using MemoryStreamExtension encStream = new();
-                encStream.Write(buffer, 0, inputStream.Read(buffer, 0, buffer.Length));
+                encStream.Write(buffer, 0, fileStream.Read(buffer, 0, buffer.Length));
                 encStream.Position = 32; //sanity check ofc
-                inputStream.Flush();
+                fileStream.Flush();
 
                 int tocSize = (int) header.TotalTableOfContentSize - 32;
                 int decSize = 0;
@@ -436,14 +419,14 @@ namespace RocksmithLibNeXt.Formats.Psarc
                     #endif
                 }
 
-                inputStream.Position = 0;
+                fileStream.Position = 0;
                 encStream.Position = 0;
-                encStream.CopyTo(inputStream, (int) header.BlockSizeAlloc);
+                encStream.CopyTo(fileStream, (int) header.BlockSizeAlloc);
             }
 
             if (seek) {
-                inputStream.Flush();
-                inputStream.Seek(0, SeekOrigin.Begin);
+                fileStream.Flush();
+                fileStream.Seek(0, SeekOrigin.Begin);
             }
         }
 
@@ -462,9 +445,10 @@ namespace RocksmithLibNeXt.Formats.Psarc
                 return;
 
             PsarcEntry entry = new() {
-                Name = name,
+                Name = name.Replace("\\", "/"),
                 Data = data,
                 Length = data.Length,
+                BlockSizes = new List<int>(Enumerable.Range(1, (int)Math.Ceiling((decimal)data.Length / header.BlockSizeAlloc))),
                 Compressed = false
             };
 
