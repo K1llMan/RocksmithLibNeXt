@@ -1,12 +1,11 @@
-﻿using System;
-using System.IO;
+﻿using System.IO;
 using System.Reflection;
 
 using RocksmithLibNeXt.Formats.Psarc;
 
-namespace RocksmithLibNeXt.Tests
+namespace RocksmithLibNeXt.GenericUseCases
 {
-    public class RocksmithLibNeXtTestHarness : IDisposable
+    public class UseCasesConfig
     {
         #region Properties
 
@@ -37,13 +36,9 @@ namespace RocksmithLibNeXt.Tests
 
         #region Main functions
 
-        public RocksmithLibNeXtTestHarness()
+        public UseCasesConfig()
         {
             InitProperties();
-        }
-
-        public void Dispose()
-        {
         }
 
         #endregion Main functions

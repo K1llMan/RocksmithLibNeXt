@@ -1,7 +1,9 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
+  <Import Project="..\Common\Common.xml" />
 
   <PropertyGroup>
-    <TargetFramework>net5.0</TargetFramework>
+      <TargetFramework>net5.0</TargetFramework>
+      <OutputPath>$(OutputPath)Tests</OutputPath>
 
     <IsPackable>false</IsPackable>
   </PropertyGroup>
@@ -23,21 +25,10 @@
 
   <ItemGroup>
     <Folder Include="Formats\" />
-    <Folder Include="Resources\" />
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\RocksmithLibNeXt.GenericUseCases\RocksmithLibNeXt.GenericUseCases.csproj" />
     <ProjectReference Include="..\RocksmithLibNeXt\RocksmithLibNeXt.csproj" />
   </ItemGroup>
-
-    <Target Name="CopyCustomContent" AfterTargets="AfterBuild">
-        <Copy SourceFiles="Resources\test.psarc" DestinationFolder="$(OutDir)\TestData" />
-    </Target>
-
-  <ItemGroup>
-    <None Update="Resources\test.psarc">
-      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
-    </None>
-  </ItemGroup>
-
 </Project>

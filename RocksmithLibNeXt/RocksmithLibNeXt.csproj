@@ -1,7 +1,9 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <Import Project="..\Common\Common.xml"/>
 
   <PropertyGroup>
-    <TargetFramework>net5.0</TargetFramework>
+      <TargetFramework>net5.0</TargetFramework>
+      <OutputPath>$(OutputPath)RocksmithLibNeXt</OutputPath>
   </PropertyGroup>
 
   <ItemGroup>
@@ -13,5 +15,4 @@
     <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="5.0.0" />
     <PackageReference Include="zlib.managed" Version="1.1.4" />
   </ItemGroup>
-
 </Project>

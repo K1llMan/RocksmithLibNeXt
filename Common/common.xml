@@ -1,0 +1,6 @@
+<Project>
+  <PropertyGroup>
+    <OutputPath>$(SolutionDir)build\</OutputPath>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+  </PropertyGroup>
+</Project>

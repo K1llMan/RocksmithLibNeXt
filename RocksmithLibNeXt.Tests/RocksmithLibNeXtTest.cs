@@ -1,4 +1,6 @@
-﻿using Xunit;
+﻿using RocksmithLibNeXt.GenericUseCases;
+
+using Xunit;
 using Xunit.Abstractions;
 
 // Optional
@@ -13,19 +15,19 @@ using Xunit.Abstractions;
 namespace RocksmithLibNeXt.Tests
 {
     [CollectionDefinition("RocksmithLibNeXt Test Harness")]
-    public class YandexTestCollection : ICollectionFixture<RocksmithLibNeXtTestHarness>
+    public class RocksmithLibNeXtTestCollection : ICollectionFixture<UseCasesConfig>
     {
     }
 
     public class RocksmithLibNeXtTest
     {
-        public RocksmithLibNeXtTest(RocksmithLibNeXtTestHarness fixture, ITestOutputHelper output)
+        public RocksmithLibNeXtTest(UseCasesConfig fixture, ITestOutputHelper output)
         {
             Fixture = fixture;
             Output = output;
         }
 
-        public RocksmithLibNeXtTestHarness Fixture { get; set; }
+        public UseCasesConfig Fixture { get; set; }
 
         public ITestOutputHelper Output { get; set; }
     }

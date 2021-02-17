@@ -1,9 +1,9 @@
 using System.IO;
-using System.Linq;
 
 using FluentAssertions;
 
 using RocksmithLibNeXt.Formats.Psarc;
+using RocksmithLibNeXt.GenericUseCases;
 
 using Xunit;
 using Xunit.Abstractions;
@@ -18,9 +18,7 @@ namespace RocksmithLibNeXt.Tests.Formats
         [Order(0)]
         public void Open_ValidData_True()
         {
-            Psarc psarc = new();
-
-            psarc.Open(Fixture.InputFileName);
+            Psarc psarc = UseCases.PsarcOpen(Fixture.InputFileName);
 
             psarc.TableOfContent.Count.Should().Be(23);
         }
@@ -29,10 +27,7 @@ namespace RocksmithLibNeXt.Tests.Formats
         [Order(1)]
         public void Extract_ValidData_True()
         {
-            Psarc psarc = new();
-            psarc.Open(Fixture.InputFileName);
-
-            psarc.Extract(Fixture.TempDir);
+            UseCases.PsarcExtract(Fixture.InputFileName, Fixture.TempDir);
 
             Directory.Exists(Fixture.TempDir).Should().BeTrue();
             Directory.GetFiles(Fixture.TempDir, "*").Length.Should().Equals(23);
@@ -42,15 +37,7 @@ namespace RocksmithLibNeXt.Tests.Formats
         [Order(2)]
         public void Save_ValidData_True()
         {
-            Psarc psarc = new();
-
-            Directory.Exists(Fixture.TempDir).Should().BeTrue();
-            Directory.GetFiles(Fixture.TempDir, "*", SearchOption.AllDirectories).ToList().ForEach(f => {
-                string relPath = Path.GetRelativePath(Fixture.TempDir, f);
-                psarc.AddEntry(relPath, f);
-            });
-
-            psarc.Save(Fixture.OutputFileName);
+            UseCases.PsarcSave(Fixture.TempDir, Fixture.OutputFileName);
 
             FileInfo file = new(Fixture.OutputFileName);
 
@@ -58,7 +45,7 @@ namespace RocksmithLibNeXt.Tests.Formats
             file.Length.Should().BeGreaterOrEqualTo(new FileInfo(Fixture.InputFileName).Length);
         }
 
-        public PsarcTest(RocksmithLibNeXtTestHarness fixture, ITestOutputHelper output) : base(fixture, output)
+        public PsarcTest(UseCasesConfig fixture, ITestOutputHelper output) : base(fixture, output)
         {
             if (File.Exists(Fixture.OutputFileName))
                 File.Delete(Fixture.OutputFileName);
