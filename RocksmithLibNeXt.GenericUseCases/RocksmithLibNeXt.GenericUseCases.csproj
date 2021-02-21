@@ -8,7 +8,13 @@
   </ItemGroup>
 
   <ItemGroup>
+    <None Update="TestData\sng_unpacked.stream">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
     <None Update="TestData\test.psarc">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="TestData\test.sng">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
   </ItemGroup>

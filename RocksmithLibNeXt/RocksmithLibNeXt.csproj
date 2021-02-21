@@ -1,5 +1,5 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
-  <Import Project="..\Common\Common.xml"/>
+  <Import Project="..\Common\Common.xml" />
 
   <PropertyGroup>
       <TargetFramework>net5.0</TargetFramework>

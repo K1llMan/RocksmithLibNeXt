@@ -18,7 +18,7 @@ namespace RocksmithLibNeXt.Tests.Formats
         [Order(0)]
         public void Open_ValidData_True()
         {
-            Psarc psarc = UseCases.PsarcOpen(Fixture.InputFileName);
+            Psarc psarc = UseCases.PsarcOpen(Fixture.InputPsarc);
 
             psarc.TableOfContent.Count.Should().Be(23);
         }
@@ -27,7 +27,7 @@ namespace RocksmithLibNeXt.Tests.Formats
         [Order(1)]
         public void Extract_ValidData_True()
         {
-            UseCases.PsarcExtract(Fixture.InputFileName, Fixture.TempDir);
+            UseCases.PsarcExtract(Fixture.InputPsarc, Fixture.TempDir);
 
             Directory.Exists(Fixture.TempDir).Should().BeTrue();
             Directory.GetFiles(Fixture.TempDir, "*").Length.Should().Equals(23);
@@ -37,18 +37,18 @@ namespace RocksmithLibNeXt.Tests.Formats
         [Order(2)]
         public void Save_ValidData_True()
         {
-            UseCases.PsarcSave(Fixture.TempDir, Fixture.OutputFileName);
+            UseCases.PsarcSave(Fixture.TempDir, Fixture.OutputPsarc);
 
-            FileInfo file = new(Fixture.OutputFileName);
+            FileInfo file = new(Fixture.OutputPsarc);
 
             file.Exists.Should().BeTrue();
-            file.Length.Should().BeGreaterOrEqualTo(new FileInfo(Fixture.InputFileName).Length);
+            file.Length.Should().BeGreaterOrEqualTo(new FileInfo(Fixture.InputPsarc).Length);
         }
 
         public PsarcTest(UseCasesConfig fixture, ITestOutputHelper output) : base(fixture, output)
         {
-            if (File.Exists(Fixture.OutputFileName))
-                File.Delete(Fixture.OutputFileName);
+            if (File.Exists(Fixture.OutputPsarc))
+                File.Delete(Fixture.OutputPsarc);
         }
     }
 }

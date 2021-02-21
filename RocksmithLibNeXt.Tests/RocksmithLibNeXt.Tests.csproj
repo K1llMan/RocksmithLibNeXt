@@ -24,10 +24,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Formats\" />
-  </ItemGroup>
-
-  <ItemGroup>
     <ProjectReference Include="..\RocksmithLibNeXt.GenericUseCases\RocksmithLibNeXt.GenericUseCases.csproj" />
     <ProjectReference Include="..\RocksmithLibNeXt\RocksmithLibNeXt.csproj" />
   </ItemGroup>

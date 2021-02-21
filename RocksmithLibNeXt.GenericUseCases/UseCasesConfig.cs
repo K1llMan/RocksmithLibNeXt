@@ -11,9 +11,13 @@ namespace RocksmithLibNeXt.GenericUseCases
 
         public string LocalDir { get; set; }
 
-        public string InputFileName { get; set; }
+        public string InputPsarc { get; set; }
 
-        public string OutputFileName{ get; set; }
+        public string OutputPsarc{ get; set; }
+
+        public string InputSng { get; set; }
+
+        public string InputSngStream { get; set; }
 
         public string TempDir { get; set; }
 
@@ -27,8 +31,10 @@ namespace RocksmithLibNeXt.GenericUseCases
         {
             LocalDir = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "TestData");
 
-            InputFileName = Path.Combine(LocalDir, "test.psarc");
-            OutputFileName = Path.Combine(LocalDir, "testOut.psarc");
+            InputPsarc = Path.Combine(LocalDir, "test.psarc");
+            OutputPsarc = Path.Combine(LocalDir, "testOut.psarc");
+            InputSng = Path.Combine(LocalDir, "test.sng");
+            InputSngStream = Path.Combine(LocalDir, "sng_unpacked.stream");
             TempDir = Path.Combine(LocalDir, "temp");
         }
 

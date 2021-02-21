@@ -20,13 +20,13 @@ namespace RocksmithLibNeXt.Benchmark
         [Benchmark]
         public void PsarcOpen()
         {
-            UseCases.PsarcOpen(config.InputFileName);
+            UseCases.PsarcOpen(config.InputPsarc);
         }
 
         [Benchmark]
         public void PsarcExtract()
         {
-            UseCases.PsarcExtract(config.InputFileName, config.TempDir);
+            UseCases.PsarcExtract(config.InputPsarc, config.TempDir);
         }
 
         [Benchmark]
