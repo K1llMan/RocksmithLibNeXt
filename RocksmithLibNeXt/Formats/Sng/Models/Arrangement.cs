@@ -1,18 +1,20 @@
 ﻿using System.IO;
 
+using RocksmithLibNeXt.Formats.Sng.Common;
+
 namespace RocksmithLibNeXt.Formats.Sng.Models
 {
     public class Arrangement
     {
         #region Properties
 
-        public AnchorExtensionCollection AnchorExtensions { get; set; }
-        public AnchorCollection Anchors { get; set; }
+        public SngCollection<AnchorExtension> AnchorExtensions { get; set; }
+        public SngCollection<Anchor> Anchors { get; set; }
         public float[] AverageNotesPerIteration { get; set; }
         public int Difficulty { get; set; }
-        public FingerprintCollection Fingerprints1 { get; set; }
-        public FingerprintCollection Fingerprints2 { get; set; }
-        public NotesCollection Notes { get; set; }
+        public SngCollection<Fingerprint> Fingerprints1 { get; set; }
+        public SngCollection<Fingerprint> Fingerprints2 { get; set; }
+        public SngCollection<Notes> Notes { get; set; }
         public int[] NotesInIteration1 { get; set; }
         public int[] NotesInIteration2 { get; set; }
 
@@ -28,11 +30,11 @@ namespace RocksmithLibNeXt.Formats.Sng.Models
         {
             Arrangement a = new() {
                 Difficulty = r.ReadInt32(),
-                Anchors = AnchorCollection.Read(r),
-                AnchorExtensions = AnchorExtensionCollection.Read(r),
-                Fingerprints1 = FingerprintCollection.Read(r),
-                Fingerprints2 = FingerprintCollection.Read(r),
-                Notes = NotesCollection.Read(r),
+                Anchors = SngCollection<Anchor>.Read(r),
+                AnchorExtensions = SngCollection<AnchorExtension>.Read(r),
+                Fingerprints1 = SngCollection<Fingerprint>.Read(r),
+                Fingerprints2 = SngCollection<Fingerprint>.Read(r),
+                Notes = SngCollection<Notes>.Read(r),
                 PhraseCount = r.ReadInt32()
             };
 

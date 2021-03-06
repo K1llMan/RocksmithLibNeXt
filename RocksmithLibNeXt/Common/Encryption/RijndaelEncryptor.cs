@@ -26,27 +26,6 @@ namespace RocksmithLibNeXt.Common.Encryption
 
         #region RS2
 
-        public static byte[] PsarcKey = new byte[32] {
-            0xC5, 0x3D, 0xB2, 0x38, 0x70, 0xA1, 0xA2, 0xF7,
-            0x1C, 0xAE, 0x64, 0x06, 0x1F, 0xDD, 0x0E, 0x11,
-            0x57, 0x30, 0x9D, 0xC8, 0x52, 0x04, 0xD4, 0xC5,
-            0xBF, 0xDF, 0x25, 0x09, 0x0D, 0xF2, 0x57, 0x2C
-        };
-
-        public static byte[] SngKeyMac = new byte[32] {
-            0x98, 0x21, 0x33, 0x0E, 0x34, 0xB9, 0x1F, 0x70,
-            0xD0, 0xA4, 0x8C, 0xBD, 0x62, 0x59, 0x93, 0x12,
-            0x69, 0x70, 0xCE, 0xA0, 0x91, 0x92, 0xC0, 0xE6,
-            0xCD, 0xA6, 0x76, 0xCC, 0x98, 0x38, 0x28, 0x9D
-        };
-
-        public static byte[] SngKeyPC = new byte[32] {
-            0xCB, 0x64, 0x8D, 0xF3, 0xD1, 0x2A, 0x16, 0xBF,
-            0x71, 0x70, 0x14, 0x14, 0xE6, 0x96, 0x19, 0xEC,
-            0x17, 0x1C, 0xCA, 0x5D, 0x2A, 0x14, 0x2E, 0x3E,
-            0x59, 0xDE, 0x7A, 0xDD, 0xA1, 0x8A, 0x3A, 0x30
-        };
-
         //metadata
         public static byte[] PCMetaDatKey = new byte[32] {
             0x5F, 0xB0, 0x23, 0xEF, 0x19, 0xD5, 0xDC, 0x37,
@@ -73,15 +52,6 @@ namespace RocksmithLibNeXt.Common.Encryption
         #endregion
 
         #region Auxiliary function
-
-        private static void InitRijndael(Rijndael rij, byte[] key, CipherMode cipher)
-        {
-            rij.Padding = PaddingMode.None;
-            rij.Mode = cipher;
-            rij.BlockSize = 128;
-            rij.IV = new byte[16];
-            rij.Key = key; // byte[32]
-        }
 
         private static void Crypto(Stream input, Stream output, ICryptoTransform transform, long len)
         {
@@ -122,100 +92,30 @@ namespace RocksmithLibNeXt.Common.Encryption
         }         
          */
 
+        public static RijndaelManaged InitRijndael(byte[] key, CipherMode cipher)
+        {
+            return new() {
+                Padding = PaddingMode.None,
+                Mode = cipher,
+                BlockSize = 128,
+                IV = new byte[16],
+                Key = key, // byte[32]
+            };
+        }
+
         public static void EncryptFile(Stream input, Stream output, byte[] key, CipherMode mode, long len)
         {
-            using RijndaelManaged rij = new();
-            InitRijndael(rij, key, mode);
+            using RijndaelManaged rij = InitRijndael(key, mode);
             Crypto(input, output, rij.CreateEncryptor(), len);
         }
 
         public static void DecryptFile(Stream input, Stream output, byte[] key, CipherMode mode, long len)
         {
-            using RijndaelManaged rij = new();
-            InitRijndael(rij, key, mode);
+            using RijndaelManaged rij = InitRijndael(key, mode);
             Crypto(input, output, rij.CreateDecryptor(), len);
         }
 
         #endregion Main functions
-
-        #region SngEncryption
-
-        /*
-                 public static void EncryptSngData(Stream input, Stream output, byte[] key)
-        {
-            byte[] iv = new byte[16];
-            using var rij = new RijndaelManaged();
-            InitRijndael(rij, key, CipherMode.CFB);
-            output.Write(iv, 0, iv.Length);
-
-            var buffer = new byte[16];
-            long len = input.Length - input.Position;
-            for (long i = 0; i < len; i += buffer.Length)
-            {
-                using (ICryptoTransform transform = rij.CreateEncryptor())
-                {
-                    var cs = new CryptoStream(output, transform, CryptoStreamMode.Write);
-                    int bytesread = input.Read(buffer, 0, buffer.Length);
-                    cs.Write(buffer, 0, bytesread);
-
-                    int pad = buffer.Length - bytesread;
-                    if (pad > 0)
-                        cs.Write(new byte[pad], 0, pad);
-
-                    cs.FlushFinalBlock();
-                }
-
-                int j;
-                bool carry;
-                for (j = (rij.IV.Length) - 1, carry = true; j >= 0 && carry; j--)
-                    carry = ((iv[j] = (byte)(rij.IV[j] + 1)) == 0);
-                rij.IV = iv;
-            }
-        }
-
-        public static void DecryptSngData(Stream input, Stream output, byte[] key, EndianBitConverter conv)
-        {
-            var reader = new EndianBinaryReader(conv, input);
-            if (0x4A != reader.ReadUInt32())
-                throw new InvalidDataException("This is not valid SNG file to decrypt.");
-            reader.ReadBytes(4);//platform header (bitfield? 001 - Compressed; 010 - Encrypted;)
-            byte[] iv = reader.ReadBytes(16);
-            using (var rij = new RijndaelManaged())
-            {
-                InitRijndael(rij, key, CipherMode.CFB);
-                rij.IV = iv;
-
-                var buffer = new byte[16];
-                long len = input.Length - input.Position;
-                for (long i = 0; i < len; i += buffer.Length)
-                {
-                    using (ICryptoTransform transform = rij.CreateDecryptor())
-                    {
-                        var cs = new CryptoStream(output, transform, CryptoStreamMode.Write);
-                        int bytesread = input.Read(buffer, 0, buffer.Length);
-                        cs.Write(buffer, 0, bytesread);
-
-                        int pad = buffer.Length - bytesread;
-                        if (pad > 0)
-                            cs.Write(new byte[pad], 0, pad);
-
-                        cs.Flush();
-                    }
-
-                    int j;
-                    bool carry;
-                    for (j = (rij.IV.Length) - 1, carry = true; j >= 0 && carry; j--)
-                        carry = ((iv[j] = (byte)(rij.IV[j] + 1)) == 0);
-                    rij.IV = iv;
-                }
-                output.SetLength(input.Length - (iv.Length + 8));
-            }
-            output.Flush();
-            output.Seek(0, SeekOrigin.Begin);
-        }
-         */
-
-        #endregion SngEncryption
 
         #region ProfileEncryption
 

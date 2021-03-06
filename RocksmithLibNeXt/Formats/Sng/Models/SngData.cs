@@ -1,29 +1,31 @@
 using System.IO;
 
+using RocksmithLibNeXt.Formats.Sng.Common;
+
 namespace RocksmithLibNeXt.Formats.Sng.Models
 {
     public class SngData
     {
         #region Properties
 
-        public ActionCollection Actions { get; set; }
-        public ArrangementCollection Arrangements { get; set; }
-        public BpmCollection BPMs { get; set; }
-        public ChordNotesCollection ChordNotes { get; set; }
-        public ChordCollection Chords { get; set; }
-        public DnaCollection DNAs { get; set; }
-        public EventCollection Events { get; set; }
+        public SngCollection<Action> Actions { get; set; }
+        public SngCollection<Arrangement> Arrangements { get; set; }
+        public SngCollection<Bpm> BPMs { get; set; }
+        public SngCollection<ChordNotes> ChordNotes { get; set; }
+        public SngCollection<Chord> Chords { get; set; }
+        public SngCollection<Dna> DNAs { get; set; }
+        public SngCollection<Event> Events { get; set; }
         public Metadata Meta { get; set; }
-        public NLinkedDifficultyCollection NLD { get; set; }
-        public PhraseExtraInfoByLevelCollection PhraseExtraInfo { get; set; }
-        public PhraseIterationCollection PhraseIterations { get; set; }
-        public PhraseCollection Phrases { get; set; }
-        public SectionCollection Sections { get; set; }
-        public SymbolDefinitionCollection SymbolsDefinition { get; set; }
-        public SymbolsHeaderCollection SymbolsHeader { get; set; }
-        public SymbolsTextureCollection SymbolsTexture { get; set; }
-        public ToneCollection Tones { get; set; }
-        public VocalCollection Vocals { get; set; }
+        public SngCollection<NLinkedDifficulty> NLD { get; set; }
+        public SngCollection<PhraseExtraInfoByLevel> PhraseExtraInfo { get; set; }
+        public SngCollection<PhraseIteration> PhraseIterations { get; set; }
+        public SngCollection<Phrase> Phrases { get; set; }
+        public SngCollection<Section> Sections { get; set; }
+        public SngCollection<SymbolDefinition> SymbolsDefinition { get; set; }
+        public SngCollection<SymbolsHeader> SymbolsHeader { get; set; }
+        public SngCollection<SymbolsTexture> SymbolsTexture { get; set; }
+        public SngCollection<Tone> Tones { get; set; }
+        public SngCollection<Vocal> Vocals { get; set; }
 
         #endregion Properties
 
@@ -32,32 +34,37 @@ namespace RocksmithLibNeXt.Formats.Sng.Models
         public static SngData Read(BinaryReader r)
         {
             SngData sd = new() {
-                BPMs = BpmCollection.Read(r),
-                Phrases = PhraseCollection.Read(r),
-                Chords = ChordCollection.Read(r),
-                ChordNotes = ChordNotesCollection.Read(r),
-                Vocals = VocalCollection.Read(r)
+                BPMs = SngCollection<Bpm>.Read(r),
+                Phrases = SngCollection<Phrase>.Read(r),
+                Chords = SngCollection<Chord>.Read(r),
+                ChordNotes = SngCollection<ChordNotes>.Read(r),
+                Vocals = SngCollection<Vocal>.Read(r)
             };
 
             if (sd.Vocals.Count > 0)
             {
-                sd.SymbolsHeader = SymbolsHeaderCollection.Read(r);
-                sd.SymbolsTexture = SymbolsTextureCollection.Read(r);
-                sd.SymbolsDefinition = SymbolDefinitionCollection.Read(r);
+                sd.SymbolsHeader = SngCollection<SymbolsHeader>.Read(r);
+                sd.SymbolsTexture = SngCollection<SymbolsTexture>.Read(r);
+                sd.SymbolsDefinition = SngCollection<SymbolDefinition>.Read(r);
             }
 
-            sd.PhraseIterations = PhraseIterationCollection.Read(r);
-            sd.PhraseExtraInfo = PhraseExtraInfoByLevelCollection.Read(r);
-            sd.NLD = NLinkedDifficultyCollection.Read(r);
-            sd.Actions = ActionCollection.Read(r);
-            sd.Events = EventCollection.Read(r);
-            sd.Tones = ToneCollection.Read(r);
-            sd.DNAs = DnaCollection.Read(r);
-            sd.Sections = SectionCollection.Read(r);
-            sd.Arrangements = ArrangementCollection.Read(r);
+            sd.PhraseIterations = SngCollection<PhraseIteration>.Read(r);
+            sd.PhraseExtraInfo = SngCollection<PhraseExtraInfoByLevel>.Read(r);
+            sd.NLD = SngCollection<NLinkedDifficulty>.Read(r);
+            sd.Actions = SngCollection<Action>.Read(r);
+            sd.Events = SngCollection<Event>.Read(r);
+            sd.Tones = SngCollection<Tone>.Read(r);
+            sd.DNAs = SngCollection<Dna>.Read(r);
+            sd.Sections = SngCollection<Section>.Read(r);
+            sd.Arrangements = SngCollection<Arrangement>.Read(r);
             sd.Meta = Metadata.Read(r);
 
             return sd;
+        }
+
+        public void Write(BinaryWriter w)
+        {
+
         }
 
         #endregion Main functions

@@ -16,29 +16,8 @@ namespace RocksmithLibNeXt.Tests.Formats
     [Collection("RocksmithLibNeXt Test Harness")]
     public class SngTest : RocksmithLibNeXtTest
     {
-        #region Test class
-
-        private class TestCollection : SngCollection<TestCollection, Bpm>
-        {
-
-        }
-
-        #endregion Test class
-
         [Fact]
         [Order(0)]
-        public void CollectionInterface_ValidData_True()
-        {
-            using FileStream fs = new(Fixture.InputSng, FileMode.Open);
-            BinaryReader reader = new(fs);
-
-            TestCollection collection = TestCollection.Read(reader);
-
-            collection.Should().NotBeNullOrEmpty();
-        }
-
-        [Fact]
-        [Order(1)]
         public void OpenStream_ValidData_True()
         {
             FileStream fs = new(Fixture.InputSngStream, FileMode.Open);

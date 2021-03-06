@@ -1,5 +1,7 @@
 ﻿using System.IO;
 
+using RocksmithLibNeXt.Formats.Sng.Common;
+
 namespace RocksmithLibNeXt.Formats.Sng.Models
 {
     public class Notes
@@ -14,7 +16,7 @@ namespace RocksmithLibNeXt.Formats.Sng.Models
 
         public byte AnchorFretId { get; set; }
         public byte AnchorWidth { get; set; }
-        public BendDataCollection BendData { get; set; }
+        public SngCollection<BendData> BendData { get; set; }
         public int ChordId { get; set; }
         public int ChordNotesId { get; set; }
         public byte FretId { get; set; }
@@ -82,7 +84,7 @@ namespace RocksmithLibNeXt.Formats.Sng.Models
             n.Vibrato = r.ReadInt16();
             n.Sustain = r.ReadSingle();
             n.MaxBend = r.ReadSingle();
-            n.BendData = BendDataCollection.Read(r);
+            n.BendData = SngCollection<BendData>.Read(r);
 
             return n;
         }

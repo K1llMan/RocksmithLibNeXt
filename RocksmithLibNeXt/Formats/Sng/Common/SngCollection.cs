@@ -6,17 +6,14 @@ using System.Reflection;
 
 namespace RocksmithLibNeXt.Formats.Sng.Common
 {
-    // Curiously Repeating Template Pattern
     /// <summary>
     /// Base collection
     /// </summary>
-    /// <typeparam name="T">Collection type</typeparam>
-    /// <typeparam name="IT">Collection item type</typeparam>
-    public class SngCollection<T, IT> : IList<IT> where T: SngCollection<T, IT>,  new()
+    public class SngCollection<T> : IList<T> where T : new()
     {
         #region Fields
 
-        private List<IT> items = new();
+        private List<T> items = new();
 
         #endregion Fields
 
@@ -28,7 +25,14 @@ namespace RocksmithLibNeXt.Formats.Sng.Common
 
         private static MethodInfo GetObjectReader()
         {
-            MethodInfo method = typeof(IT).GetMethod("Read");
+            MethodInfo method = typeof(T).GetMethod("Read");
+
+            return method;
+        }
+
+        private static MethodInfo GetObjectWriter()
+        {
+            MethodInfo method = typeof(T).GetMethod("Write");
 
             return method;
         }
@@ -37,7 +41,7 @@ namespace RocksmithLibNeXt.Formats.Sng.Common
 
         #region Main functions
 
-        public static T Read(BinaryReader r)
+        public static SngCollection<T> Read(BinaryReader r)
         {
             if (r == null)
                 return null;
@@ -47,13 +51,13 @@ namespace RocksmithLibNeXt.Formats.Sng.Common
 
                 MethodInfo reader = GetObjectReader();
                 if (reader == null)
-                    throw new Exception($"Type \"{typeof(IT).FullName}\" does not contains method \"Read\".");
+                    throw new Exception($"Type \"{typeof(T).FullName}\" does not contains method \"Read\".");
 
-                List<IT> list = new();
+                List<T> list = new();
                 for (int i = 0; i < count; i++) 
-                    list.Add((IT)reader.Invoke(null, new object[] { r }));
+                    list.Add((T)reader.Invoke(null, new object[] { r }));
 
-                return new T {
+                return new SngCollection<T> {
                     items = list
                 };
             }
@@ -62,11 +66,33 @@ namespace RocksmithLibNeXt.Formats.Sng.Common
             }
         }
 
+        public void Write(BinaryWriter w)
+        {
+            if (w == null)
+                return;
+
+            try
+            {
+                w.Write(items.Count);
+
+                MethodInfo writer = GetObjectWriter();
+                if (writer == null)
+                    throw new Exception($"Type \"{typeof(T).FullName}\" does not contains method \"Write\".");
+
+                foreach (T item in items)
+                    writer.Invoke(item, new object[] { w });
+            }
+            catch (Exception ex)
+            {
+                throw new Exception($"Error writing collection \"{typeof(T).FullName}\": {ex}.");
+            }
+        }
+
         #endregion Main functions
 
         #region IList
 
-        public void Add(IT item)
+        public void Add(T item)
         {
             items.Add(item);
         }
@@ -76,17 +102,17 @@ namespace RocksmithLibNeXt.Formats.Sng.Common
             items.Clear();
         }
 
-        public bool Contains(IT item)
+        public bool Contains(T item)
         {
             return items.Contains(item);
         }
 
-        public void CopyTo(IT[] array, int arrayIndex)
+        public void CopyTo(T[] array, int arrayIndex)
         {
             items.CopyTo(array, arrayIndex);
         }
 
-        public bool Remove(IT item)
+        public bool Remove(T item)
         {
             return items.Remove(item);
         }
@@ -95,12 +121,12 @@ namespace RocksmithLibNeXt.Formats.Sng.Common
 
         public bool IsReadOnly => false;
 
-        public int IndexOf(IT item)
+        public int IndexOf(T item)
         {
             return items.IndexOf(item);
         }
 
-        public void Insert(int index, IT item)
+        public void Insert(int index, T item)
         {
             items.Insert(index, item);
         }
@@ -110,7 +136,7 @@ namespace RocksmithLibNeXt.Formats.Sng.Common
             items.RemoveAt(index);
         }
 
-        public IT this[int index]
+        public T this[int index]
         {
             get => items[index];
             set => items[index] = value;
@@ -120,7 +146,7 @@ namespace RocksmithLibNeXt.Formats.Sng.Common
 
         #region IEnumerable
 
-        public IEnumerator<IT> GetEnumerator()
+        public IEnumerator<T> GetEnumerator()
         {
             return items.GetEnumerator();
         }
