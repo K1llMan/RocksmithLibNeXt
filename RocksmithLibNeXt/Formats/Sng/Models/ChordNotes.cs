@@ -73,6 +73,21 @@ namespace RocksmithLibNeXt.Formats.Sng.Models
             return cn;
         }
 
+        public void Write(BinaryWriter w)
+        {
+            foreach (uint mask in NoteMask) 
+                w.Write(mask);
+
+            foreach (BendData bendData in Bend)
+                bendData.Write(w);
+
+            w.Write(SlideTo);
+            w.Write(SlideUnpitchTo);
+
+            foreach (short v in Vibrato)
+                w.Write(v);
+        }
+
         #endregion Main functions
     }
 }

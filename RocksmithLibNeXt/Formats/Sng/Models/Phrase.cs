@@ -26,6 +26,8 @@ namespace RocksmithLibNeXt.Formats.Sng.Models
 
         #endregion Properties
 
+        #region Main functions
+
         public static Phrase Read(BinaryReader r)
         {
             return new() {
@@ -38,5 +40,18 @@ namespace RocksmithLibNeXt.Formats.Sng.Models
                 Name = r.ReadBytes(32),
             };
         }
+
+        public void Write(BinaryWriter w)
+        {
+            w.Write(Solo);
+            w.Write(Disparity);
+            w.Write(Ignore);
+            w.Write(Padding);
+            w.Write(MaxDifficulty);
+            w.Write(PhraseIterationLinks);
+            w.Write(Name);
+        }
+
+        #endregion Main functions
     }
 }

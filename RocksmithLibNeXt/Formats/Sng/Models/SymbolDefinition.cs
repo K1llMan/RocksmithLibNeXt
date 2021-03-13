@@ -33,6 +33,13 @@ namespace RocksmithLibNeXt.Formats.Sng.Models
             };
         }
 
+        public void Write(BinaryWriter w)
+        {
+            w.Write(Text);
+            RectOuter.Write(w);
+            RectInner.Write(w);
+        }
+
         #endregion Main functions
     }
 }

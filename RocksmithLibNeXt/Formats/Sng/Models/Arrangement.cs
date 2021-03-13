@@ -55,6 +55,28 @@ namespace RocksmithLibNeXt.Formats.Sng.Models
             return a;
         }
 
+        public void Write(BinaryWriter w)
+        {
+            w.Write(Difficulty);
+            Anchors.Write(w);
+            AnchorExtensions.Write(w);
+            Fingerprints1.Write(w);
+            Fingerprints2.Write(w);
+            Notes.Write(w);
+            
+            w.Write(PhraseCount);
+            foreach (float notes in AverageNotesPerIteration)
+                w.Write(notes);
+            
+            w.Write(PhraseIterationCount1);
+            foreach (int notes in NotesInIteration1)
+                w.Write(notes);
+            
+            w.Write(PhraseIterationCount2);
+            foreach (int notes in NotesInIteration2)
+                w.Write(notes);
+        }
+
         #endregion Main functions
     }
 }

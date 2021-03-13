@@ -33,6 +33,18 @@ namespace RocksmithLibNeXt.Formats.Sng.Models
             };
         }
 
+        public void Write(BinaryWriter w)
+        {
+            w.Write(Unk1);
+            w.Write(Unk2);
+            w.Write(Unk3);
+            w.Write(Unk4);
+            w.Write(Unk5);
+            w.Write(Unk6);
+            w.Write(Unk7);
+            w.Write(Unk8);
+        }
+
         #endregion Main functions
     }
 }

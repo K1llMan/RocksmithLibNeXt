@@ -1,5 +1,6 @@
 ﻿using System.IO;
 using System.Reflection;
+using System.Security.Cryptography;
 
 using RocksmithLibNeXt.Formats.Psarc;
 
@@ -19,6 +20,8 @@ namespace RocksmithLibNeXt.GenericUseCases
 
         public string InputSngStream { get; set; }
 
+        public string OutputSngStream { get; set; }
+
         public string TempDir { get; set; }
 
         public Psarc Psarc { get; set; }
@@ -35,6 +38,7 @@ namespace RocksmithLibNeXt.GenericUseCases
             OutputPsarc = Path.Combine(LocalDir, "testOut.psarc");
             InputSng = Path.Combine(LocalDir, "test.sng");
             InputSngStream = Path.Combine(LocalDir, "sng_unpacked.stream");
+            OutputSngStream = Path.Combine(LocalDir, "sng_unpacked_output.stream");
             TempDir = Path.Combine(LocalDir, "temp");
         }
 
@@ -45,6 +49,26 @@ namespace RocksmithLibNeXt.GenericUseCases
         public UseCasesConfig()
         {
             InitProperties();
+        }
+
+        public byte[] CalculateHash(Stream s)
+        {
+            return new MD5CryptoServiceProvider().ComputeHash(s);
+        }
+
+        public bool CompareStreams(Stream s1, Stream s2)
+        {
+            byte[] hashS1 = new MD5CryptoServiceProvider().ComputeHash(s1);
+            byte[] hashS2 = new MD5CryptoServiceProvider().ComputeHash(s2);
+
+            if (hashS1.Length != hashS2.Length)
+                return false;
+
+            for (int i = 0; i < hashS1.Length; i++)
+                if (hashS1[i] != hashS2[i])
+                    return false;
+
+            return true;
         }
 
         #endregion Main functions

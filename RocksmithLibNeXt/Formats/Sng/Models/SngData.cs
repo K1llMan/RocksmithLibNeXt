@@ -64,7 +64,29 @@ namespace RocksmithLibNeXt.Formats.Sng.Models
 
         public void Write(BinaryWriter w)
         {
+            BPMs.Write(w);
+            Phrases.Write(w);
+            Chords.Write(w);
+            ChordNotes.Write(w);
+            Vocals.Write(w);
 
+            if (Vocals.Count > 0)
+            {
+                SymbolsHeader.Write(w);
+                SymbolsTexture.Write(w);
+                SymbolsDefinition.Write(w);
+            }
+            
+            PhraseIterations.Write(w);
+            PhraseExtraInfo.Write(w);
+            NLD.Write(w);
+            Actions.Write(w);
+            Events.Write(w);
+            Tones.Write(w);
+            DNAs.Write(w);
+            Sections.Write(w);
+            Arrangements.Write(w);
+            Meta.Write(w);
         }
 
         #endregion Main functions

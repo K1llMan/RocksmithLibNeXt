@@ -63,6 +63,28 @@ namespace RocksmithLibNeXt.Formats.Sng.Models
             return m;
         }
 
+        public void Write(BinaryWriter w)
+        {
+            w.Write(MaxScore);
+            w.Write(MaxNotesAndChords);
+            w.Write(MaxNotesAndChordsReal);
+            w.Write(PointsPerNote);
+            w.Write(FirstBeatLength);
+            w.Write(StartTime);
+            w.Write(CapoFretId);
+            w.Write(LastConversionDateTime);
+            w.Write(Part);
+            w.Write(SongLength);
+            w.Write(StringCount);
+
+            foreach (short s in Tuning)
+                w.Write(s);
+
+            w.Write(Unk11_FirstNoteTime);
+            w.Write(Unk12_FirstNoteTime);
+            w.Write(MaxDifficulty);
+        }
+
         #endregion Main functions
     }
 }

@@ -89,6 +89,40 @@ namespace RocksmithLibNeXt.Formats.Sng.Models
             return n;
         }
 
+        public void Write(BinaryWriter w)
+        {
+            w.Write(NoteMask);
+            w.Write(NoteFlags);
+            w.Write(Hash);
+            w.Write(Time);
+            w.Write(StringIndex);
+            w.Write(FretId);
+            w.Write(AnchorFretId);
+            w.Write(AnchorWidth);
+            w.Write(ChordId);
+            w.Write(ChordNotesId);
+            w.Write(PhraseId);
+            w.Write(PhraseIterationId);
+
+            foreach (short id in FingerPrintId)
+                w.Write(id);
+
+            w.Write(NextIterNote);
+            w.Write(PrevIterNote);
+            w.Write(ParentPrevNote);
+            w.Write(SlideTo);
+            w.Write(SlideUnpitchTo);
+            w.Write(LeftHand);
+            w.Write(Tap);
+            w.Write(PickDirection);
+            w.Write(Slap);
+            w.Write(Pluck);
+            w.Write(Vibrato);
+            w.Write(Sustain);
+            w.Write(MaxBend);
+            BendData.Write(w);
+        }
+
         #endregion Main functions
     }
 }

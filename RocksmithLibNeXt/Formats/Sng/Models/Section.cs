@@ -47,6 +47,17 @@ namespace RocksmithLibNeXt.Formats.Sng.Models
             };
         }
 
+        public void Write(BinaryWriter w)
+        {
+            w.Write(Name);
+            w.Write(Number);
+            w.Write(StartTime);
+            w.Write(EndTime);
+            w.Write(StartPhraseIterationId);
+            w.Write(EndPhraseIterationId);
+            w.Write(StringMask);
+        }
+
         #endregion Main functions
     }
 }

@@ -29,6 +29,15 @@ namespace RocksmithLibNeXt.Formats.Sng.Models
             return n;
         }
 
+        public void Write(BinaryWriter w)
+        {
+            w.Write(LevelBreak);
+            w.Write(PhraseCount);
+
+            foreach (int phrase in NLDPhrase)
+                w.Write(phrase);
+        }
+
         #endregion Main functions
     }
 }

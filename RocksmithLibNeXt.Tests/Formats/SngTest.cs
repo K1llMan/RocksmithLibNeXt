@@ -2,8 +2,6 @@ using System.IO;
 
 using FluentAssertions;
 
-using RocksmithLibNeXt.Formats.Sng;
-using RocksmithLibNeXt.Formats.Sng.Common;
 using RocksmithLibNeXt.Formats.Sng.Models;
 using RocksmithLibNeXt.GenericUseCases;
 
@@ -18,13 +16,30 @@ namespace RocksmithLibNeXt.Tests.Formats
     {
         [Fact]
         [Order(0)]
-        public void OpenStream_ValidData_True()
+        public void SngStreamRead_ValidData_True()
         {
             FileStream fs = new(Fixture.InputSngStream, FileMode.Open);
             BinaryReader reader = new(fs);
-
             SngData sng = SngData.Read(reader);
+            fs.Close();
+
             sng.Should().NotBeNull();
+        }
+
+        [Fact]
+        [Order(1)]
+        public void SngStreamWrite_ValidData_True()
+        {
+            FileStream fs = new(Fixture.InputSngStream, FileMode.Open);
+            BinaryReader reader = new(fs);
+            SngData sng = SngData.Read(reader);
+            
+
+            FileStream ofs = new(Fixture.OutputSngStream, FileMode.Create);
+            BinaryWriter writer = new(ofs);
+            sng.Write(writer);
+
+            Fixture.CompareStreams(fs, ofs).Should().BeTrue();
         }
 
         /*

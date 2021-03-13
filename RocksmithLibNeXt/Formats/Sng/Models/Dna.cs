@@ -22,6 +22,12 @@ namespace RocksmithLibNeXt.Formats.Sng.Models
             };
         }
 
+        public void Write(BinaryWriter w)
+        {
+            w.Write(Time);
+            w.Write(DnaId);
+        }
+
         #endregion Main functions
     }
 }

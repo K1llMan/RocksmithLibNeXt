@@ -15,6 +15,8 @@ namespace RocksmithLibNeXt.Formats.Sng.Models
 
         #endregion
 
+        #region Main functions
+
         public static Bpm Read(BinaryReader r)
         {
             return new() {
@@ -25,5 +27,16 @@ namespace RocksmithLibNeXt.Formats.Sng.Models
                 Mask = r.ReadInt32(),
             };
         }
+
+        public void Write(BinaryWriter w)
+        {
+            w.Write(Time);
+            w.Write(Measure);
+            w.Write(Beat);
+            w.Write(PhraseIteration);
+            w.Write(Mask);
+        }
+
+        #endregion Main functions
     }
 }

@@ -36,6 +36,14 @@ namespace RocksmithLibNeXt.Formats.Sng.Models
             };
         }
 
+        public void Write(BinaryWriter w)
+        {
+            foreach (BendData32 bendData32 in Bend32) 
+                bendData32.Write(w);
+
+            w.Write(UsedCount);
+        }
+
         #endregion Main functions
     }
 }

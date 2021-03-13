@@ -40,6 +40,16 @@ namespace RocksmithLibNeXt.Formats.Sng.Models
             return pi;
         }
 
+        public void Write(BinaryWriter w)
+        {
+            w.Write(PhraseId);
+            w.Write(StartTime);
+            w.Write(NextPhraseTime);
+
+            foreach (int d in Difficulty)
+                w.Write(d);
+        }
+
         #endregion Main functions
     }
 }

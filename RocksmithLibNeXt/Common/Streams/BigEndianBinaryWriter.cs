@@ -94,27 +94,17 @@ namespace RocksmithLibNeXt.Common.Streams
 
         public override void Write(byte[] val)
         {
-            //try
-            //{
             foreach (byte v in val) {
                 Write(v);
             }
-
-            //}
-            //catch (Exception ex)
-            //{
-            //    // big fish
-            //    Console.WriteLine("<ERROR> Big Fish: " + ex.Message);
-            //    this.Flush();
-            //    Thread.Sleep(200);
-            //}
         }
 
         public static void CopyStream(Stream input, Stream output)
         {
             byte[] buffer = new byte[32768];
             int read;
-            while ((read = input.Read(buffer, 0, buffer.Length)) > 0) output.Write(buffer, 0, read);
+            while ((read = input.Read(buffer, 0, buffer.Length)) > 0) 
+                output.Write(buffer, 0, read);
         }
 
         #endregion Main functions

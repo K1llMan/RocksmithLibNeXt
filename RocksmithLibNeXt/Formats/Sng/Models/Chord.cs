@@ -60,6 +60,18 @@ namespace RocksmithLibNeXt.Formats.Sng.Models
             return c;
         }
 
+        public void Write(BinaryWriter w)
+        {
+            w.Write(Mask);
+            w.Write(Frets);
+            w.Write(Fingers);
+
+            foreach (int note in Notes)
+                w.Write(note);
+
+            w.Write(Name);
+        }
+
         #endregion Main functions
     }
 }
